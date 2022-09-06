@@ -1,0 +1,25 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Resources": {
+        "NameForCFT": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "FunctionName": "Lamba_Function_Name",
+              "Code": {
+                "S3Bucket": "S3 Bucket Name",
+                "S3Key": "Zip File Name"
+              },
+              "Role": "Role Arn",
+              "Runtime":"python3.9",
+              "Timeout": 130,
+              "Handler": "FileName.lambda_handler",
+              "VpcConfig" : {
+                              "SecurityGroupIds" : [ "sg-0469a2197b5eb3b17"],
+                              "SubnetIds" : [ "subnet-030c93fc5b37ec76a" ]
+                            }
+            }
+        }
+    }
+
+
+}
