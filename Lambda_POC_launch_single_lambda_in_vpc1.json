@@ -1,24 +1,133 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
     "Resources": {
-        "NameForCFT": {
+        "LambdaPOCCFT2": {
             "Type": "AWS::Lambda::Function",
             "Properties": {
-              "FunctionName": "Lamba_Function_Name",
+              "FunctionName": "LambdaPOCLambaFunctionName",
               "Code": {
-                "S3Bucket": "S3 Bucket Name",
-                "S3Key": "Zip File Name"
+                "S3Bucket": {
+                    "Ref": "S3BucketName"
+                },
+                "S3Key": {
+                    "Ref": "ZipFileName"
+                }
               },
-              "Role": "Role Arn",
-              "Runtime":"python3.9",
+              "Role": {"Fn::GetAtt" : ["LambdaPOCRoleCreation", "Arn"] },
+              "Runtime":{
+                "Ref": "RuntimeLambda"
+                },
               "Timeout": 130,
-              "Handler": "FileName.lambda_handler",
+              "Handler": {
+                "Ref": "LambdaHandler"
+                },
               "VpcConfig" : {
-                              "SecurityGroupIds" : [ "sg-0469a2197b5eb3b17"],
-                              "SubnetIds" : [ "subnet-030c93fc5b37ec76a" ]
+                              "SecurityGroupIds" : [ {
+                                "Ref": "SecurityGroupIdss"
+                                }],
+                              "SubnetIds" : [ {
+                                "Ref": "SubnetIdss"
+                                } ]
                             }
             }
+        },
+        "LambdaPOCRoleCreation": {
+          "Type": "AWS::IAM::Role",
+          "Properties": {
+              "AssumeRolePolicyDocument": {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                      {
+                          "Effect": "Allow",
+                          "Principal": {
+                              "Service": [
+                                  "lambda.amazonaws.com"
+                              ]
+                          },
+                          "Action": [
+                              "sts:AssumeRole"
+                          ]
+                      }
+                  ]
+              },
+              "Path": "/",
+              "Policies": [
+                  {
+                      "PolicyName": "LambdaBasicPoc",
+                      "PolicyDocument": {
+                          "Version": "2012-10-17",
+                          "Statement": [
+                              {
+                                  "Effect": "Allow",
+                                  "Action": [
+                                      "logs:CreateLogGroup",
+                                      "logs:CreateLogStream",
+                                      "logs:PutLogEvents"
+                                  ],
+                                  "Resource": "*"
+                              }
+                          ]
+                      }
+                  },
+                  {
+                    "PolicyName": "LambdaLCPOC",
+                    "PolicyDocument": {
+                        "Version": "2012-10-17",
+                        "Statement": [
+                            {
+                                "Effect": "Allow",
+                                "Action": [
+                                  "ec2:DescribeNetworkInterfaces",
+                                  "ec2:CreateNetworkInterface",
+                                  "ec2:DeleteNetworkInterface",
+                                  "ec2:DescribeInstances",
+                                  "ec2:AttachNetworkInterface"
+                                ],
+                                "Resource": "*"
+                            }
+                        ]
+                    }
+                }
+              ]
+          }
+      }
+        
+    },
+    "Parameters": {
+        "S3BucketName":
+        {
+            "Description": "Name of S3 Bucket",
+            "Type": "String"
+        },
+        "ZipFileName":
+        {
+            "Description": "Name of Zip File",
+            "Type": "String"
+        },
+        "LambdaHandler":
+        {
+            "Description": "codefilename.handlerfunctionname",
+            "Type": "String"
+        },
+        "RuntimeLambda":
+        {
+            "Description": "Enter the runtime ",
+            "AllowedValues" : ["python3.9", "java8", "nodejs8.10"],
+            "Type": "String"
+        },
+        "SubnetIdss":
+        {
+            "Description": "Enter subnet id",
+            "Default": "subnet-030c93fc5b37ec76a",
+            "Type": "String"
+        },
+        "SecurityGroupIdss":
+        {
+            "Description": "Enter security group id",
+            "Default": "sg-0469a2197b5eb3b17",
+            "Type": "String"
         }
+        
     }
 
 
