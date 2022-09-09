@@ -1,0 +1,191 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Resources": {
+        "LambdaPOCCodeBuild":{
+            "Type" : "AWS::CodeBuild::Project",
+            "Properties" : {
+                "Artifacts" : {
+                    "Type": "no_artifacts"
+                  },
+                "Description" : "LambdaFunctionCICDCFT",
+                "Environment" : {
+                    "ComputeType" : {"Ref":"ComputeType"},
+                    "Image" : {"Ref":"ImageEnv"},
+                    "Type" : "LINUX_CONTAINER"
+                  },
+                "Name" : {
+                    "Ref" : "CodeBuildName"
+                },
+                "QueuedTimeoutInMinutes" : 10,
+                "ResourceAccessRole" : {"Fn::GetAtt" : ["CodeBuildCICDPolicy1", "Arn"] },
+                "ServiceRole" : {"Fn::GetAtt" : ["CodeBuildCICDPolicy1", "Arn"] },
+                "Source" : {
+                    "BuildStatusConfig" : {
+                        "Context" : "GitHub"
+                      }
+                      ,
+                    "Location" : {
+                        "Ref" : "RepoURL"
+                    },
+                    "Type" : "GITHUB"
+                  },
+                "TimeoutInMinutes" : 10,
+                "Triggers" : {
+                    "BuildType" : "BUILD",
+                    "Webhook" : true
+                  },
+                  "VpcConfig" : {
+                    "SecurityGroupIds" : [ {"Ref": "SecurityGroupIds"} ],
+                    "Subnets" : [ {"Ref":"SubnetIds"} ],
+                    "VpcId" : {"Ref":"VpcId"}
+                  }
+                  
+              }
+          },          
+        "CodeBuildCICDPolicy1": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "codebuild.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                },
+                "Path": "/",
+                "Policies": [
+                    {
+                        "PolicyName": "CodeBuildBasicPoc2",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "lambda:AddPermission",
+                                        "lambda:RemovePermission",
+                                        "lambda:CreateAlias",
+                                        "lambda:UpdateAlias",
+                                        "lambda:DeleteAlias",
+                                        "lambda:UpdateFunctionCode",
+                                        "lambda:UpdateFunctionConfiguration",
+                                        "lambda:PutFunctionConcurrency",
+                                        "lambda:DeleteFunctionConcurrency",
+                                        "lambda:PublishVersion"
+                                    ],
+                                    "Resource": "*"
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "codebuild:CreateReportGroup",
+                                        "codebuild:CreateReport",
+                                        "codebuild:UpdateReport",
+                                        "codebuild:BatchPutTestCases",
+                                        "codebuild:BatchPutCodeCoverages"
+                                    ],
+                                    "Resource": "*"
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "logs:CreateLogGroup",
+                                        "logs:CreateLogStream",
+                                        "logs:PutLogEvents"
+                                    ],
+                                    "Resource": "*"
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Resource": "*",
+                                    "Action": [
+                                        "s3:PutObject",
+                                        "s3:GetObject",
+                                        "s3:GetObjectVersion",
+                                        "s3:GetBucketAcl",
+                                        "s3:GetBucketLocation"
+                                    ]
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "ec2:CreateNetworkInterface",
+                                        "ec2:DescribeDhcpOptions",
+                                        "ec2:DescribeNetworkInterfaces",
+                                        "ec2:DeleteNetworkInterface",
+                                        "ec2:DescribeSubnets",
+                                        "ec2:DescribeSecurityGroups",
+                                        "ec2:DescribeVpcs",
+                                        "ec2:CreateNetworkInterfacePermission",
+                                        "ecr:BatchCheckLayerAvailability",
+                                        "ecr:CompleteLayerUpload",
+                                        "ecr:GetAuthorizationToken",
+                                        "ecr:InitiateLayerUpload",
+                                        "ecr:PutImage",
+                                        "ecr:UploadLayerPart",
+                                        "ecs:RunTask",
+                                        "iam:PassRole",
+                                        "logs:CreateLogGroup",
+                                        "logs:CreateLogStream",
+                                        "logs:PutLogEvents",
+                                        "ssm:GetParameters"
+                                    ],
+                                    "Resource": "*"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+          
+    },
+    "Parameters": {
+        "CodeBuildName" : {
+            "Description": "Name of the codebuild",
+            "Type": "String"
+        },
+        "RepoURL": {
+            "Description": "GitHub Repo URL",
+            "Type": "String"
+        },
+        "SubnetIds": {
+            "Description": "Provide Subnet ID",
+            "Type": "String",
+            "Default": "subnet-030c93fc5b37ec76a"
+        },
+        "SecurityGroupIds": {
+            "Description": "Provide Security Group ID",
+            "Type": "String",
+            "Default": "sg-0469a2197b5eb3b17"
+        },
+        "ComputeType": {
+            "Description": "Select the compute type",
+            "Type": "String",
+            "Default": "BUILD_GENERAL1_SMALL",
+            "AllowedValues" : ["BUILD_GENERAL1_SMALL", "BUILD_GENERAL1_MEDIUM", "BUILD_GENERAL1_LARGE"]
+        },
+        "ImageEnv": {
+            "Description": "Select the image type",
+            "Type": "String",
+            "Default": "aws/codebuild/standard:5.0",
+            "AllowedValues": ["aws/codebuild/standard:4.0","aws/codebuild/standard:5.0","aws/codebuild/standard:6.0"]
+        },
+        "VpcId": {
+            "Description": "Provide VPC ID",
+            "Type": "String",
+            "Default": "vpc-08c44a6abdca26f08"
+        }
+
+
+    }
+}
