@@ -1,0 +1,136 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Parameters":{
+        "AquaConfig":{
+          "Description": "Select the AQUA setting",
+          "Type": "String",
+          "AllowedValues":[ "auto","disabled","enabled"]   
+        },
+        "AvailabilityZone":{
+            "Description": "Enter availability zone",
+            "Type": "String",
+            "Default": "us-east-1"
+        },
+        "CLusterType": {
+            "Description": "Select Node Type:",
+            "Type": "String",
+            "AllowedValues": ["single-node","multi-node"]
+        },
+        "DataBaseName": {
+            "Description": "Enter Database Name",
+            "Type": "String"
+        },
+        "Encryption": {
+            "Description" : "Encryption of data at rest",
+            "Type": "String",
+            "AllowedValues": [ "true" , "false"],
+            "Default": "false"
+        },
+        "VpcEnhancedRouting":{
+            "Description" : "Enhanced VPC routing",
+            "Type": "String",
+            "AllowedValues": [ "true" , "false"],
+            "Default": "false"
+        },
+        "BucketName":{
+            "Description": "S3 Bucket name for logging and it should be in same region as redshift",
+            "Type": "String"
+        },
+        "S3KeyPrefix":{
+            "Description": "Prefix is attached to log file names",
+            "Type": "String"
+        },
+        "MasterUserName": {
+            "Description": "Must be 1 - 128 alphanumeric characters, The user name can't be PUBLIC, First character must be a letter,Cannot be a reserved word",
+            "Type": "String"
+        },
+        "MasterUserPassword": {
+            "Description": "Must contain atleast one Uppercase and lowercase letter, must contain one number, '  /  not allowed",
+            "Type": "String"
+        },
+        "SelectNode": {
+            "Description": "Select Node Type",
+            "Type": "String",
+            "AllowedValues": ["ds2.xlarge","ds2.8xlarge","dc1.large","dc1.8xlarge","dc2.large","dc2.8xlarge","ra3.xlplus","ra3.4xlarge","ra3.16xlarge"]
+        },
+        "NumberOfNodes": {
+            "Description": "Provide Number Of Nodes, it is 1 for single node",
+            "Type": "String",
+            "Default": "1"
+        }
+    },
+    "Resources": {
+        "RedShiftPOC": {
+            "Type" : "AWS::Redshift::Cluster",
+            "Properties" : {
+                "AllowVersionUpgrade" : true,
+                "AquaConfigurationStatus" : {"Ref": "AquaConfig"},
+                "AvailabilityZone" : {"Ref": "AvailabilityZone"},
+                "ClusterType" : {"Ref": "CLusterType"},
+                "DBName" : {"Ref": "DataBaseName"},
+                "Encrypted" : {"Ref":"Encryption"},
+                "EnhancedVpcRouting" : {"Ref":"VpcEnhancedRouting"},
+                "IamRoles" : [ {"Fn::GetAtt" : ["RoleForRedshift", "Arn"] }],
+                "LoggingProperties" : {
+                    "BucketName" : {"Ref":"BucketName"},
+                    "S3KeyPrefix" : {"Ref": "S3KeyPrefix"}
+                  },
+                "MasterUsername" : {"Ref":"MasterUserName"},
+                "MasterUserPassword" : {"Ref":"MasterUserPassword"},
+                "NodeType" : {"Ref": "SelectNode"},
+                "NumberOfNodes" : {"Ref":"NumberOfNodes"}
+              }
+          },
+          "RoleForRedshift": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "redshift.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                },
+                "Path": "/",
+                "Policies": [
+                    {
+                        "PolicyName": "root",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "logs:CreateLogGroup",
+                                        "logs:CreateLogStream",
+                                        "logs:PutLogEvents"
+                                    ],
+                                    "Resource": "*"
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "s3:*",
+                                        "s3-object-lambda:*"
+                                    ],
+                                    "Resource": "*"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+            
+    }
+          
+}
